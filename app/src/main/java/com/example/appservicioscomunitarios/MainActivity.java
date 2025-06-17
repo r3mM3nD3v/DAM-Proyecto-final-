@@ -1,67 +1,79 @@
 package com.example.appservicioscomunitarios;
 
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.view.MenuItem;
+import android.widget.Button;
+import android.widget.Toast;
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.ActionBarDrawerToggle;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
-import androidx.core.view.GravityCompat;
-import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.material.navigation.NavigationView;
+import java.util.List;
 
-public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
+import com.example.appservicioscomunitarios.data.AppDatabase;
+import com.example.appservicioscomunitarios.data.Servicio;
+import com.example.appservicioscomunitarios.data.ServicioDao;
+import com.example.appservicioscomunitarios.ui.ServicioAdapter;
 
-    private DrawerLayout drawer;
+public class MainActivity extends AppCompatActivity {
+
+    private RecyclerView recyclerView;
+    private Button btnAgregar;
+    private ServicioAdapter adapter;
+    private ServicioDao servicioDao;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        Toolbar toolbar = findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
+        recyclerView = findViewById(R.id.recyclerServicios);
+        btnAgregar = findViewById(R.id.btnAgregar);
 
-        drawer = findViewById(R.id.drawer_layout);
-        NavigationView navigationView = findViewById(R.id.nav_view);
-        navigationView.setNavigationItemSelectedListener(this);
+        servicioDao = AppDatabase.getInstance(this).servicioDao();
 
-        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawer, toolbar,
-                R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-        drawer.addDrawerListener(toggle);
-        toggle.syncState();
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        cargarServicios();
 
-        if (savedInstanceState == null) {
-            navigationView.setCheckedItem(R.id.nav_home);
-        }
+        btnAgregar.setOnClickListener(v -> {
+            startActivity(new Intent(this, com.example.appservicioscomunitarios.ui.ServicioFormActivity.class));
+        });
+    }
+
+    private void cargarServicios() {
+        List<Servicio> listaServicios = servicioDao.getAll();
+        adapter = new ServicioAdapter(listaServicios, this, new ServicioAdapter.OnItemClickListener() {
+            @Override
+            public void onItemClick(Servicio servicio) {
+                // Abrir formulario para editar
+                Intent intent = new Intent(MainActivity.this, com.example.appservicioscomunitarios.ui.ServicioFormActivity.class);
+                intent.putExtra("servicioId", servicio.getId());
+                startActivity(intent);
+            }
+
+            @Override
+            public void onDeleteClick(Servicio servicio) {
+                // Confirmar eliminación
+                new AlertDialog.Builder(MainActivity.this)
+                        .setTitle("Eliminar Servicio")
+                        .setMessage("¿Seguro que deseas eliminar este servicio?")
+                        .setPositiveButton("Sí", (dialog, which) -> {
+                            servicioDao.delete(servicio);
+                            Toast.makeText(MainActivity.this, "Servicio eliminado", Toast.LENGTH_SHORT).show();
+                            cargarServicios();
+                        })
+                        .setNegativeButton("No", null)
+                        .show();
+            }
+        });
+        recyclerView.setAdapter(adapter);
     }
 
     @Override
-    public void onBackPressed() {
-        if (drawer.isDrawerOpen(GravityCompat.START)) {
-            drawer.closeDrawer(GravityCompat.START);
-        } else {
-            super.onBackPressed();
-        }
-    }
-
-    @Override
-    public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-        int id = item.getItemId();
-
-        if (id == R.id.nav_logout) {
-            SharedPreferences.Editor editor = getSharedPreferences(LoginActivity.PREF_NAME, MODE_PRIVATE).edit();
-            editor.clear();
-            editor.apply();
-            startActivity(new Intent(this, LoginActivity.class));
-            finish();
-        }
-
-        drawer.closeDrawer(GravityCompat.START);
-        return true;
+    protected void onResume() {
+        super.onResume();
+        cargarServicios(); // recargar la lista cuando regrese de formulario
     }
 }
