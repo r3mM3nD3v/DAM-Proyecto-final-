@@ -27,10 +27,10 @@ Esta aplicación permite gestionar servicios comunitarios y está organizada en 
 
 ### 🔹 Parte 2 – CRUD y Base de Datos Local 
 
-- CRUD completo de **servicios comunitarios** (crear, leer, editar, eliminar).
-- Implementación de **Room + SQLite** para persistencia local.
-- Uso de **RecyclerView** para mostrar listas de servicios con imágenes.
-- Personalización de ítems y persistencia en base de datos.
+- ✅ CRUD completo de **servicios comunitarios** (crear, leer, editar, eliminar).
+- ✅ Implementación de **Room + SQLite** para persistencia local.
+- ✅ Uso de **RecyclerView** para mostrar listas de servicios con imágenes.
+- ✅ Personalización de ítems y persistencia en base de datos.
 
 ### 🔹 Parte 3 – Experiencia de Usuario y Extras 
 
