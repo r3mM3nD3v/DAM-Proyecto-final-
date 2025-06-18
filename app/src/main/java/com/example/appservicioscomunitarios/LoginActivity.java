@@ -3,21 +3,29 @@ package com.example.appservicioscomunitarios;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.appservicioscomunitarios.data.AppDatabase;
+import com.example.appservicioscomunitarios.data.Usuario;
+import com.example.appservicioscomunitarios.data.UsuarioDao;
+
 public class LoginActivity extends AppCompatActivity {
+
+    public static final String PREF_NAME = "sesion_usuario";
+    public static final String KEY_USER = "usuario_activo";
 
     EditText etUser, etPass;
     Button btnLogin, btnRegister;
-    SharedPreferences sharedPreferences;
+    ProgressBar progreso;
 
-    public static final String PREF_NAME = "datos_usuario";
-    public static final String KEY_USER = "usuario";
-    public static final String KEY_PASS = "clave";
+    UsuarioDao usuarioDao;
+    SharedPreferences sharedPreferences;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,31 +36,67 @@ public class LoginActivity extends AppCompatActivity {
         etPass = findViewById(R.id.etPass);
         btnLogin = findViewById(R.id.btnLogin);
         btnRegister = findViewById(R.id.btnRegister);
+        progreso = findViewById(R.id.progreso);
 
+        usuarioDao = AppDatabase.getInstance(this).usuarioDao();
         sharedPreferences = getSharedPreferences(PREF_NAME, MODE_PRIVATE);
 
+        // Si ya hay usuario logueado, ir directo a MainActivity
         if (sharedPreferences.contains(KEY_USER)) {
             startActivity(new Intent(this, MainActivity.class));
+            overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
             finish();
         }
 
         btnLogin.setOnClickListener(v -> {
-            String u = etUser.getText().toString();
-            String p = etPass.getText().toString();
+            String usuarioInput = etUser.getText().toString().trim();
+            String claveInput = etPass.getText().toString().trim();
 
-            String savedUser = sharedPreferences.getString(KEY_USER, "");
-            String savedPass = sharedPreferences.getString(KEY_PASS, "");
-
-            if (u.equals(savedUser) && p.equals(savedPass)) {
-                startActivity(new Intent(this, MainActivity.class));
-                finish();
-            } else {
-                Toast.makeText(this, "Credenciales incorrectas", Toast.LENGTH_SHORT).show();
+            if (usuarioInput.isEmpty() || claveInput.isEmpty()) {
+                Toast.makeText(this, "Ingrese usuario y contraseña", Toast.LENGTH_SHORT).show();
+                return;
             }
+
+            mostrarCargando(true);
+
+            new Thread(() -> {
+                try {
+                    Usuario usuario = usuarioDao.login(usuarioInput, claveInput);
+                    runOnUiThread(() -> {
+                        mostrarCargando(false);
+                        if (usuario != null) {
+                            SharedPreferences.Editor editor = sharedPreferences.edit();
+                            editor.putString(KEY_USER, usuario.getUsuario());
+                            editor.apply();
+
+                            Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+                            startActivity(intent);
+                            overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
+                            finish();
+                        } else {
+                            Toast.makeText(LoginActivity.this, "Credenciales incorrectas", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                } catch (Exception e) {
+                    runOnUiThread(() -> {
+                        mostrarCargando(false);
+                        Toast.makeText(LoginActivity.this, "Error al iniciar sesión", Toast.LENGTH_SHORT).show();
+                    });
+                }
+            }).start();
         });
 
-        btnRegister.setOnClickListener(v ->
-                startActivity(new Intent(this, RegisterActivity.class))
-        );
+        btnRegister.setOnClickListener(v -> {
+            startActivity(new Intent(this, RegisterActivity.class));
+            overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
+        });
+    }
+
+    private void mostrarCargando(boolean cargando) {
+        progreso.setVisibility(cargando ? View.VISIBLE : View.GONE);
+        btnLogin.setEnabled(!cargando);
+        btnRegister.setEnabled(!cargando);
+        etUser.setEnabled(!cargando);
+        etPass.setEnabled(!cargando);
     }
 }
