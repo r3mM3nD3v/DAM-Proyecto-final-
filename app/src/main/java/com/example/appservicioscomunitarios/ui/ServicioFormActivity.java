@@ -1,7 +1,9 @@
 package com.example.appservicioscomunitarios.ui;
 
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.EditText;
@@ -19,6 +21,8 @@ import com.example.appservicioscomunitarios.data.ServicioDao;
 
 public class ServicioFormActivity extends AppCompatActivity {
 
+    private static final int PERMISSION_REQUEST_CODE = 100;
+
     private EditText edtTitulo, edtDescripcion;
     private ImageView imageView;
     private Button btnGuardar, btnRegresar;
@@ -35,6 +39,10 @@ public class ServicioFormActivity extends AppCompatActivity {
                         if (uri != null) {
                             imagenSeleccionadaUri = uri;
                             imageView.setImageURI(uri);
+
+                            // Pedir permiso persistente para la URI
+                            final int takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION;
+                            getContentResolver().takePersistableUriPermission(uri, takeFlags);
                         }
                     });
 
@@ -65,10 +73,7 @@ public class ServicioFormActivity extends AppCompatActivity {
             }
         }
 
-        imageView.setOnClickListener(v -> {
-            // Abrir selector de imagen
-            selectImageLauncher.launch("image/*");
-        });
+        imageView.setOnClickListener(v -> pedirPermisoYSeleccionarImagen());
 
         btnGuardar.setOnClickListener(v -> {
             String titulo = edtTitulo.getText().toString().trim();
@@ -96,5 +101,37 @@ public class ServicioFormActivity extends AppCompatActivity {
         });
 
         btnRegresar.setOnClickListener(v -> finish());
+    }
+
+    private void pedirPermisoYSeleccionarImagen() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(android.Manifest.permission.READ_MEDIA_IMAGES) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{android.Manifest.permission.READ_MEDIA_IMAGES}, PERMISSION_REQUEST_CODE);
+            } else {
+                abrirSelectorImagen();
+            }
+        } else {
+            if (checkSelfPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{android.Manifest.permission.READ_EXTERNAL_STORAGE}, PERMISSION_REQUEST_CODE);
+            } else {
+                abrirSelectorImagen();
+            }
+        }
+    }
+
+    private void abrirSelectorImagen() {
+        selectImageLauncher.launch("image/*");
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == PERMISSION_REQUEST_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                abrirSelectorImagen();
+            } else {
+                Toast.makeText(this, "Permiso denegado para acceder a las imágenes", Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 }
