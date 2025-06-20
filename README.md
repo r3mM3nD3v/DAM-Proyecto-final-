@@ -34,10 +34,10 @@ Esta aplicación permite gestionar servicios comunitarios y está organizada en 
 
 ### 🔹 Parte 3 – Experiencia de Usuario y Extras 
 
-- Personalización del tema (modo **claro / oscuro**).
-- Implementación de **diálogos personalizados** (confirmaciones, edición).
-- Navegación fluida entre Activities/Fragments.
-- Apoyo en el **video demostrativo** del proyecto.
+- ✅ Personalización del tema (modo **claro / oscuro**).
+- ✅ Implementación de **diálogos personalizados** (confirmaciones, edición).
+- ✅ Navegación fluida entre Activities/Fragments.
+- ✅ Apoyo en el **video demostrativo** del proyecto.
 
 ---
 
